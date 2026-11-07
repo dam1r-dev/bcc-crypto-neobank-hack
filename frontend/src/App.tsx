@@ -1,122 +1,59 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useEffect, useState } from 'react'
 import './App.css'
 
+type Tab = 'Главная' | 'Активы' | 'Карта' | 'Кешбэк' | 'Профиль'
+type Screen = 'onboarding' | 'main' | 'topup' | 'buy' | 'confirm' | 'success' | 'cashback-choice' | 'partner' | 'partner-consent' | 'gold'
+type Data = { balance: number; gold: number; partner: boolean; cashback: 'tenge' | 'gold' | null; onboarded: boolean }
+const initial: Data = { balance: 0, gold: 0, partner: false, cashback: null, onboarded: false }
+const fmt = (n: number) => Math.round(n).toLocaleString('ru-RU')
+const grams = (n: number) => n.toFixed(4).replace('.', ',')
+const tabs: { name: Tab; icon: string }[] = [{ name: 'Главная', icon: 'home' }, { name: 'Активы', icon: 'assets' }, { name: 'Карта', icon: 'card' }, { name: 'Кешбэк', icon: 'cashback' }, { name: 'Профиль', icon: 'profile' }]
+function Icon({ name }: { name: string }) { return <img className="icon" src={`${import.meta.env.BASE_URL}figma/${name}.svg`} alt="" /> }
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const [data, setData] = useState<Data>(() => { try { return { ...initial, ...JSON.parse(localStorage.getItem('bcc-demo') || '{}') } } catch { return initial } })
+  const [tab, setTab] = useState<Tab>('Главная')
+  const [screen, setScreen] = useState<Screen>(() => { try { return JSON.parse(localStorage.getItem('bcc-demo') || '{}').onboarded ? 'main' : 'onboarding' } catch { return 'onboarding' } })
+  const [step, setStep] = useState(0)
+  const [amount, setAmount] = useState(50000)
+  const [choice, setChoice] = useState<'tenge' | 'gold' | null>(null)
+  const [seconds, setSeconds] = useState(30)
+  const [requote, setRequote] = useState(false)
+  const [buyRate, setBuyRate] = useState(61875)
+  const [message, setMessage] = useState('')
+  useEffect(() => { localStorage.setItem('bcc-demo', JSON.stringify(data)) }, [data])
+  useEffect(() => { if (screen !== 'confirm' || seconds <= 0) return; const id = window.setTimeout(() => setSeconds(seconds - 1), 1000); return () => window.clearTimeout(id) }, [screen, seconds])
+  const buyGrams = amount * .99 / buyRate
+  const goldValue = data.gold * 61250
+  const total = data.balance + goldValue + (data.partner ? 10160 : 0)
+  const go = (s: Screen) => { setScreen(s); setMessage('') }
+  const topup = () => { setAmount(50000); go('topup') }
+  const buy = () => { setAmount(10000); setBuyRate(61875); go('buy') }
+  const back = () => { if (screen === 'confirm') go('buy'); else if (screen === 'partner-consent') go('partner'); else go('main') }
+  const confirmBuy = () => { if (seconds === 0 && !requote) { setRequote(true); return } setData(d => ({ ...d, balance: d.balance - amount, gold: d.gold + (requote ? amount * .99 / 62030 : buyGrams) })); if (requote) setBuyRate(62030); setRequote(false); go('success') }
+  const primary = (label: string, action: () => void, disabled = false) => <button className="button primary" disabled={disabled} onClick={action}>{label}</button>
+  const risk = <div className="risk"><Icon name="info" /><span>Цена золота может снизиться. Доходность не гарантируется</span></div>
+  const rates = <div className="rates"><div><small>Курс покупки</small><p>{fmt(buyRate)} ₸/г</p></div><div><small>Курс продажи</small><p>61 250 ₸/г</p></div></div>
+  const partner = <div className="partner"><p>Vexelia Exchange (демо)</p><strong>20 USDT · ≈ 10 160 ₸</strong><small>Ориентировочно</small><div className="row"><span className="badge">только просмотр</span><small>обновлено 14:32</small></div></div>
+  const portfolio = <div className="portfolio"><div className="bar"><i style={{width: `${total ? data.balance / total * 100 : 0}%`}}/><i style={{width: `${total ? goldValue / total * 100 : 0}%`}}/><i style={{width: `${total && data.partner ? 10160 / total * 100 : 0}%`, flex: "none"}}/></div><div className="row"><small>Тенге {total ? (data.balance / total * 100).toFixed(1).replace(".", ",") : "0"}%</small><small>Золото {total ? (goldValue / total * 100).toFixed(1).replace(".", ",") : "0"}%</small><small>Партнёр {total && data.partner ? (10160 / total * 100).toFixed(1).replace(".", ",") : "0"}%</small></div></div>
+  const title = screen === 'main' ? (tab === 'Главная' ? 'Даурен' : tab) : ({ onboarding: ['Где хранятся активы', 'Как считается цена', 'О рисках', 'Тестовый профиль'][step], topup: 'Пополнить счёт', buy: 'Купить золото', confirm: 'Проверить покупку', success: 'Покупка завершена', 'cashback-choice': 'Выбор кешбэка', partner: 'Подключить партнёра', 'partner-consent': 'Доступ к активам', gold: 'Золото' } as Record<Exclude<Screen, 'main'>, string>)[screen]
+  return <div className="app"><div className="status"><span>9:41</span><div><Icon name="signal"/><Icon name="wifi"/><Icon name="battery"/></div></div><header>{screen !== 'main' && screen !== 'onboarding' && <button className="back" onClick={back} aria-label="Назад"><Icon name="back"/></button>}<h1>{title}</h1>{screen === 'main' && <small>Демо</small>}{screen === 'onboarding' && <small>{step + 1} / 4</small>}</header>
+  {screen === 'onboarding' && <main className="content flow"><h2>{['Все активы в одном месте', 'Прозрачная стоимость', 'Золото — не вклад', 'Выберите профиль'][step]}</h2><p className="muted">{['Тенге хранятся в BCC, золото — у хранителя. Активы партнёров доступны только для просмотра.', 'Комиссия покупки составляет 1%. Цена покупки и продажи отличается.', 'Цена золота может снизиться. Доходность не гарантируется.', 'В демо используются тестовые данные.'][step]}</p><div className="card"><h3>{['Тенге · Золото · Партнёры', 'Пример покупки', 'Важно знать', 'Даурен, 20 лет'][step]}</h3><p>{['Карта использует только тенге. Активы партнёров не списываются.', '10 000 ₸ → 0,1600 г золота. При продаже сразу — примерно 9 800 ₸.', 'Золото не является вкладом. Стоимость активов может измениться.', 'Тестовый профиль для знакомства с приложением.'][step]}</p></div><div className="spacer"/>{primary(step === 3 ? 'Начать' : 'Продолжить', () => { if (step < 3) setStep(step + 1); else { setData(d => ({ ...d, onboarded: true })); go('main') } })}</main>}
+  {screen === 'main' && <main className="content main-content">
+    {tab === 'Главная' && <><div className={`asset-card ${data.balance === 0 ? 'dark' : 'soft'}`}><p>Доступно в тенге</p><strong>{fmt(data.balance)} ₸</strong><small>Карта тратит только тенге</small></div>{data.balance === 0 && data.gold === 0 ? <><div className="empty"><Icon name="wallet"/><h2>Пока пусто. Начните с 1 000 ₸</h2><p className="muted">Пополните счёт для повседневных трат. Покупать золото необязательно.</p></div><small>Подключите кошелёк, чтобы видеть активы. Только просмотр</small><div className="spacer"/>{primary('Пополнить', topup)}</> : <><div className="gold-card"><div className="row"><h3>Золото</h3><h2>{grams(data.gold)} г</h2></div><strong>≈ {fmt(goldValue)} ₸</strong><small>Покупка 61 875 · Продажа 61 250 ₸/г</small><button className="link" onClick={() => go('gold')}>Подробнее о золоте</button></div>{portfolio}<h3>Партнёры</h3>{data.partner ? partner : <button className="partner connect" onClick={() => go('partner')}>Подключить партнёра · только просмотр →</button>}<div className="spacer"/><div className="total"><small>Всего в активах</small><strong>≈ {fmt(total)} ₸</strong></div></>}</>}
+    {tab === 'Активы' && <><div className="total"><small>Всего в активах · оценка, не баланс карты</small><strong>≈ {fmt(total)} ₸</strong></div>{portfolio}<div className="asset-card soft"><p>Тенге · доступны для карты</p><strong>{fmt(data.balance)} ₸</strong><button className="link" onClick={topup}>Пополнить счёт</button></div><div className="gold-card"><h3>Золото</h3><h2>{grams(data.gold)} г</h2><strong>≈ {fmt(goldValue)} ₸</strong><div className="row gap"><button className="button secondary" onClick={() => setMessage('Продажа пока недоступна в демо')}>Продать</button><button className="button outline" onClick={buy}>Купить</button></div></div>{data.partner ? partner : <button className="partner connect" onClick={() => go('partner')}>Подключить партнёра · только просмотр →</button>}<small>Демо-данные. Котировки синтетические.</small></>}
+    {tab === 'Карта' && <><div className="virtual-card"><div className="row"><h3>Виртуальная карта</h3><b>by BCC</b></div><div><small>Доступно в тенге</small><strong>{fmt(data.balance)} ₸</strong></div><div className="row"><small>Демонстрационная</small><small>Без реальных реквизитов</small></div></div>{primary('Пополнить', topup)}<div className="risk"><Icon name="info"/><span>Карта тратит только тенге. Золото и активы партнёра не списываются.</span></div><h3>Управление картой</h3><div className="card list"><button onClick={() => setMessage('Настройки карты доступны в демо позже')}>☷ &nbsp; Лимиты и оплата <span>›</span></button><button onClick={() => setMessage('Карта демонстрационная')}>❄ &nbsp; Заморозить карту <span>›</span></button></div><h3>Операции</h3><div className="card"><p>Операций пока нет</p><small>В демо реальные платежи не выполняются. Баланс не изменяется.</small></div></>}
+    {tab === 'Кешбэк' && <><div className="card"><p>Кешбэк за месяц</p><strong className="large">{data.cashback === 'gold' ? '0,0080 г' : '495 ₸'}</strong><small>Пример начисления · демо</small></div><h3>Формат кешбэка</h3><div className="row gap"><div className="card choice"><h3>₸</h3><p>Кешбэк в тенге</p><h2>495 ₸</h2><small>в месяц · приходит на счёт</small></div><div className="card choice"><h3>г</h3><p>Кешбэк в золоте</p><h2>0,0080 г</h2><small>≈ 490 ₸ при продаже сразу</small></div></div>{primary(data.cashback ? 'Изменить формат' : 'Выбрать формат', () => { setChoice(data.cashback); go('cashback-choice') })}{risk}<small>Демо-данные. Котировки синтетические.</small></>}
+    {tab === 'Профиль' && <><div className="card profile"><div className="avatar">Д</div><div><h2>Даурен</h2><small>Тестовый профиль · by BCC</small></div></div><h3>Настройки</h3><div className="card list">{['Безопасность', 'Уведомления', 'Язык приложения', 'Тема оформления'].map(x => <button key={x} onClick={() => setMessage('Настройки доступны в полной версии')}>{x}<span>›</span></button>)}</div><h3>Помощь</h3><div className="card list">{['Вопросы и ответы', 'О приложении'].map(x => <button key={x} onClick={() => setMessage('Демонстрационное приложение by BCC')}>{x}<span>›</span></button>)}</div><div className="partner"><h3>Демонстрационный режим</h3><small>Баланс, операции и котировки — тестовые. Реальные деньги не используются.</small><button className="button secondary" onClick={() => { setData(initial); setStep(0); setTab('Главная'); go('onboarding') }}>Сбросить демо</button></div></>}
+  </main>}
+  {(screen === 'topup' || screen === 'buy') && <main className="content flow"> <p className="muted">{screen === 'topup' ? 'Тенге доступны для оплаты картой и покупки золота.' : `Доступно в тенге · ${fmt(data.balance)} ₸`}</p><label className="amount"><small>Сумма в тенге</small><span><input aria-label="Сумма в тенге" type="number" min="0" value={amount || ''} onChange={e => setAmount(Math.max(0, Number(e.target.value)))} /> ₸</span></label><small>{screen === 'buy' ? 'Минимум 1 000 ₸' : 'Сумма пополнения'}</small><div className="row gap">{(screen === 'topup' ? [10000, 25000, 50000] : [1000, 5000, 10000]).map(n => <button key={n} className={`chip ${amount === n ? 'selected' : ''}`} onClick={() => setAmount(n)}>{fmt(n)}</button>)}</div>{screen === 'topup' ? <div className="card"><h3>На счёт в тенге</h3><p className="muted">Карта тратит только тенге. Золото и активы у партнёров не списываются.</p></div> : <><h2 className="gold-text">≈ {grams(buyGrams)} г</h2><small>С учётом комиссии покупки 1% — {fmt(amount * .01)} ₸. На золото — {fmt(amount * .99)} ₸.</small>{rates}{risk}<small>Демо-данные. Котировки синтетические.</small></>}<div className="spacer"/>{screen === 'topup' ? <><small>Демо-операция. Реальные деньги не переводятся.</small>{primary(`Пополнить на ${fmt(amount)} ₸`, () => { setData(d => ({ ...d, balance: d.balance + amount })); setTab('Главная'); go('main') }, amount <= 0)}</> : <>{amount > data.balance && <p className="error">Недостаточно средств. Не хватает {fmt(amount - data.balance)} ₸. <button className="link" onClick={topup}>Пополнить</button></p>}{primary('Проверить расчёт', () => { setSeconds(30); setRequote(false); go('confirm') }, amount < 1000 || amount > data.balance)}</>}</main>}
+  {screen === 'confirm' && <main className="content flow"><div className="card breakdown"><small>Спишется всего</small><strong className="large">{fmt(amount)} ₸</strong><div className="row"><span>Комиссия покупки · 1%</span><span>{fmt(amount * .01)} ₸</span></div><small>Уже включена в общую сумму</small><div className="row"><span>На золото</span><span>{fmt(amount * .99)} ₸</span></div>{rates}<div className="row"><span>Получите граммы</span><span>{grams(buyGrams)} г</span></div><hr/><div className="row"><span>Если продать сразу</span><h2 className="green">{fmt(buyGrams * 61250)} ₸</h2></div><small>Почему меньше: комиссия и разница курсов</small></div><div className="timer"><div style={{ width: `${seconds / 30 * 100}%` }}/></div><small>Курс действует 0:{String(seconds).padStart(2, '0')}</small>{risk}<small>Демо-данные. Котировки синтетические.</small><div className="spacer"/>{primary(`Купить за ${fmt(amount)} ₸`, confirmBuy)}<small className="center">Золото не является вкладом</small></main>}
+  {screen === 'success' && <main className="content flow"><div className="success-mark">✓</div><h2>Золото куплено</h2><p className="muted">Демо-операция выполнена</p><div className="card"><small>Вы получили</small><strong className="large">{grams(buyGrams)} г</strong><p>≈ {fmt(buyGrams * 61250)} ₸ при продаже сейчас</p></div>{risk}<p className="muted">Золото хранится у хранителя. Данные и операции демонстрационные.</p><div className="spacer"/>{primary('На главную', () => { setTab('Главная'); go('main') })}</main>}
+  {screen === 'cashback-choice' && <main className="content flow"><p className="muted">Выберите формат кешбэка за месяц</p><div className="row gap">{(['tenge', 'gold'] as const).map(c => <button key={c} className={`card choice selectable ${choice === c ? 'selected' : ''}`} onClick={() => setChoice(c)} aria-pressed={choice === c}><div className="row"><span className="coin">{c === 'tenge' ? '₸' : 'г'}</span><span>{choice === c ? '◉' : '◯'}</span></div><h3>Кешбэк в {c === 'tenge' ? 'тенге' : 'золоте'}</h3><h2>{c === 'tenge' ? '495 ₸' : '0,0080 г'}</h2><small>{c === 'tenge' ? 'в месяц · приходит на счёт' : '≈ 490 ₸ при продаже сразу'}</small><small>{c === 'tenge' ? 'Можно тратить картой' : 'Курс может измениться'}</small></button>)}</div>{rates}{risk}<small>Демо-данные. Котировки синтетические.</small><div className="spacer"/>{primary('Сохранить', () => { setData(d => ({ ...d, cashback: choice })); go('main') }, !choice)}</main>}
+  {(screen === 'partner' || screen === 'partner-consent') && <main className="content flow"><h2>{screen === 'partner' ? 'Активы партнёров' : 'Только просмотр'}</h2><p className="muted">{screen === 'partner' ? 'Подключите демо-партнёра, чтобы видеть ориентировочную стоимость активов.' : 'Приложение увидит балансы. Торговать и выводить средства оно не сможет. Доступ можно отозвать.'}</p><div className="card"><h3>Vexelia Exchange (демо)</h3><p>20 USDT · только просмотр</p></div><div className="spacer"/>{primary(screen === 'partner' ? 'Продолжить' : 'Подключить', () => { if (screen === 'partner') go('partner-consent'); else { setData(d => ({ ...d, partner: true })); go('main') } })}{screen === 'partner-consent' && <button className="button outline" onClick={() => go('main')}>Отмена</button>}</main>}
+  {screen === 'gold' && <main className="content flow"><small>Цена за грамм · Демо</small><strong className="large">61 875 ₸</strong><p className="green">+ 2,4% за месяц</p><div className="chart">⌁</div>{rates}<div className="card"><h3>Моё золото</h3><h2>{grams(data.gold)} г · ≈ {fmt(goldValue)} ₸</h2><small>Если продать сейчас</small></div>{risk}<div className="spacer"/>{primary('Купить золото', buy)}</main>}
+  {screen === 'main' ? <nav aria-label="Основная навигация">{tabs.map(t => <button key={t.name} className={tab === t.name ? 'active' : ''} onClick={() => { setTab(t.name); setMessage('') }}><Icon name={t.icon}/><span>{t.name}</span></button>)}</nav> : null}<div className="safe"><div/></div>
+  {message && <div className="toast" role="status" onClick={() => setMessage('')}>{message}</div>}
+  {requote && <div className="overlay"><div className="sheet"><h2>Курс обновился</h2><p>Проверьте расчёт по текущему демо-курсу.</p><div className="card"><div className="row"><span>Было</span><strong>{grams(buyGrams)} г</strong></div><div className="row"><span>Стало · 62 030 ₸/г</span><strong>{grams(amount * .99 / 62030)} г</strong></div></div>{primary('Купить по новому курсу', confirmBuy)}<button className="button outline" onClick={() => { setRequote(false); go('buy') }}>Отменить</button></div></div>}
+ </div>
 }
-
 export default App
