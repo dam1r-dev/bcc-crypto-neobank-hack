@@ -1,0 +1,29 @@
+/* Дизайн-токены. Значения — из Figma Variables (коллекция tokens, режим Light), 7.11.2026.
+   Имена держим как в Figma; при изменении макета меняем только значения. */
+:root {
+  --backdrop: #E6E8EF;          /* фон вокруг рамки телефона на десктопе (не из Figma) */
+  --bg: #F4F5FA;
+  --surface: #FFFFFF;
+  --surface-2: #ECEDF1;
+  --text: #3A3A3B;
+  --text-muted: #61656C;
+  --border: #E7E7EB;
+  --accent: #00714F;            /* кнопки и текст на акценте: белый на нём 6,0:1 */
+  --accent-fg: #FFFFFF;
+  --accent-bright: #00AB75;     /* только иконки и декор: белый текст на нём нечитаем (3,0:1) */
+  --accent-soft: #D2EEE5;
+  --gold: #8A6416;              /* = gold-strong в Figma: текст про золото (4,9:1) */
+  --gold-bar: #B8892B;          /* = gold в Figma: полосы, точки, иконки — не для текста */
+  --gold-soft: #F6C765;         /* иконки золота */
+  --gold-tint: #FBF1DA;         /* светлый фон под золото (не из Figma) */
+  --positive: #1E7F4F;
+  --negative: #D11F23;
+  --negative-soft: #FCE6E6;
+  --warning: #8F5200;
+  --warning-soft: #FFF4E0;      /* = warning-bg в Figma */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 20px;
+  --shadow-card: 0 1px 2px rgba(58, 58, 59, 0.06), 0 4px 12px rgba(58, 58, 59, 0.04);
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
