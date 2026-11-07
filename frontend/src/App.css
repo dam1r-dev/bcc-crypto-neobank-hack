@@ -14,3 +14,5 @@
   @keyframes toast-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 }
+
+.profile-options{display:flex;flex-direction:column;gap:12px}.profile-option{width:100%;border:1px solid #e7e7eb;display:flex;align-items:center;justify-content:space-between;text-align:left;color:inherit;min-height:88px}.profile-option.selected{border-color:#00714f;background:#e2f4ed}.profile-option strong,.profile-option small{display:block}.profile-option small{margin-top:6px}.profile-option>span:last-child{color:#00714f;font-size:22px}
